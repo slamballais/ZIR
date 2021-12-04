@@ -22,18 +22,17 @@ ziw = function(x, y, perm = FALSE, perm.n = 10000) {
   
   ## calculate the pvalue
   if (perm) {
-    numrep <- 10000 
-    permu.w <- rep(0, numrep)
+    permu.w <- rep(0, perm.n)
     N <- c(length(x), length(y))
     Z <- c(x, y)
-    for (i in 1:numrep) {
+    for (i in 1:perm.n) {
       set.seed(i)
       ind <- sample(sum(N), N[1])
       x <- Z[ind] 
       y <- Z[-ind]
       permu.w[i] <- calculate_ziw_statistic(x,y) 
     }
-    p <- sum(abs(w) < abs(permu.w)) / numrep
+    p <- sum(abs(w) < abs(permu.w)) / perm.n
   }
   else{
     p <- 2 * (1 - pnorm(abs(w)))
