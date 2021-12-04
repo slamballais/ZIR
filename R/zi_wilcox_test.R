@@ -22,9 +22,8 @@ ziw <- function(x, y, perm = FALSE, perm.n = 10000, seed = NULL) {
   w <- calculate_ziw_statistic(x,y)
   
   ## calculate the pvalue
-  if (!is.null(seed)) set.seed(seed)
-  
   if (perm) {
+    if (!is.null(seed)) set.seed(seed)
     permu.w <- rep(0, perm.n)
     N <- c(length(x), length(y))
     Z <- c(x, y)

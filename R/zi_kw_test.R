@@ -27,7 +27,7 @@ zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
 
   ## check if x is a list
   if (class(x) == "numeric" || class(x) == "data.frame") {
-    x <- vect2list(x,group)
+    x <- vect2list(x, group)
   }
   
   ## calclulate the zikw statistic
@@ -35,20 +35,18 @@ zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
   
   ## calculate the pvalue
   if (perm) {
-    numrep <- perm.n
-    permu.w <- rep(0, numrep)
-    perm.group <- rep(c(1:length(x)),sapply(x,length))
+    permu.w <- rep(0, perm.n)
+    perm.group <- rep(c(seq_len(x)), sapply(x, length))
     xvec <- unlist(x)
     ## need to permute a list
-    for (i in 1:numrep) {
+    for (i in seq_len(perm.n)) {
       set.seed(i)
       xvec.perm <- sample(xvec, length(xvec))
-      x.list.perm <- vect2list(xvec.perm,group)
+      x.list.perm <- vect2list(xvec.perm, group)
       permu.w[i] <- calculate_zikw_statistic(x.list.perm)
     }
-    pw <- sum(abs(w) < abs(permu.w)) / numrep
-  }
-  else{
+    pw <- sum(abs(w) < abs(permu.w)) / perm.n
+  } else {
     K <- length(x)
     pw <- pchisq(w, K - 1, lower.tail = F)
   }
@@ -56,48 +54,56 @@ zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
   return(list(p.value = pw, statistics = w))
 }
 
-calculate_zikw_statistic = function(x){
+calculate_zikw_statistic <- function(x) {
+  
   ## number of groups
   K <- length(x)
+  
   ## total observations in each group
   N <- rep(0, K)
+  
   ## number of non-zero observations in each group
   n <- rep(0, K)
   xvec <- numeric(0)
+  
   ## count total and non-zero observations in each group
-  for (i in 1:K) {
+  for (i in seq_len(K)) {
     N[i] <- length(x[[i]])
     n[i] <- sum(x[[i]] != 0)
     xvec <- c(xvec, x[[i]])
   }
+  
   ## non-zero proportion
   prop <- n / N
   pmax <- max(prop)
+  
   ## keep only round(pmax * N) observations in each group
   Ntrun <- round(pmax * N)
+  
   ## truncate zeros in each group
   Xtrun.vec <- numeric(0)
-  for (i in 1:K) {
+  for (i in seq_len(K)) {
     data <- x[[i]]
     Xtrun.vec <-
       c(Xtrun.vec, data[data != 0], rep(0, Ntrun[i] - n[i]))
   }
   rankdata <- sum(Ntrun) + 1 - rank(Xtrun.vec)
-  r <- sum(rankdata[1:Ntrun[i]])
+  r <- sum(rankdata[seq_len(Ntrun[i])])
   
-  for (i in 2:K) {
-    r <- c(r, sum(rankdata[1:Ntrun[i] + sum(Ntrun[1:(i - 1)])]))
+  for (i in seq_len(K)[-1]) {
+    index <- seq_len(Ntrun[i]) + sum(Ntrun[seq_len(i - 1)])
+    r <- c(r, sum(rankdata[index]))
   }
   s <- r - Ntrun * (sum(Ntrun) + 1) / 2
-  u <- numeric(0)
+  u <- 0L
   
-  for (i in 1:(K - 1))
+  for (i in seq_len(K - 1))
     u <- c(u, N[i + 1] * sum(s[1:i]) - sum(N[1:i]) * s[i + 1])
-  u <- u / sum(N) ^ 2
+  u <- u / sum(N)^2
   thetam <- mean(prop)
   simun <- matrix(0, nrow = 5000, ncol = K)
   simup <- simun
-  for (ss in 1:K) {
+  for (ss in seq_len(K)) {
     simun[,ss] <- rbinom(5000, N[ss], thetam)
     simup[,ss] <- simun[,ss] / N[ss]
   }
@@ -105,31 +111,32 @@ calculate_zikw_statistic = function(x){
   varsimu <- numeric(K - 1)
   
   varsimu[1] <-
-    N[2] ^ 2 * mean(simupmax ^ 2 * (simup[,1] - simup[,2]) ^ 2) * N[1] ^ 2
+    N[2]^2 * mean(simupmax^2 * (simup[,1] - simup[,2])^2) * N[1]^2
   varu2 <- N[2] * N[1] * (N[1] + N[2])
   
-  for (ss in 2:(K - 1)) {
+  for (ss in seq_len(K - 1)[-1]) {
     varsimu[ss] <-
-      N[ss + 1] ^ 2 * mean(simupmax ^ 2 * (apply(simun[,1:ss], 1, sum) - simup[,ss +
-                                                                                 1] * sum(N[1:ss])) ^ 2)
+      N[ss + 1]^2 * mean(simupmax^2 * (apply(simun[,seq_len(ss)], 1, sum) - 
+                                         simup[,ss + 1] * sum(N[seq_len(ss)])) ^ 2)
     varu2 <-
-      c(varu2, N[ss + 1] * sum(N[1:ss]) * sum(N[1:(ss + 1)]))
+      c(varu2, N[ss + 1] * sum(N[seq_len(ss)]) * sum(N[seq_len(ss + 1)]))
   }
-  varsimu <- varsimu / (sum(N)) ^ 2 / 4
+  varsimu <- varsimu / (sum(N))^2 / 4
   
   varu2 <-
-    varu2 * thetam ^ 2 * (thetam + 1 / sum(N)) / 12 / (sum(N)) ^ 2
+    varu2 * thetam^2 * (thetam + 1 / sum(N)) / 12 / (sum(N))^2
   varu <- varsimu + varu2
+  
   ## modified Kruskal Wallis test statistic
-  w <- sum(u ^ 2 / varu)
+  w <- sum(u^2 / varu)
   return(w)
 }
 
-vect2list = function(x,group){
+vect2list <- function(x, group){
   s <- unique(group)
   x.list <- list()
-  for (i in s) {
-    x.list[[i]] <- x[group == i]
+  for (n in s) {
+    x.list[[n]] <- x[group == n]
   }
   return(x.list)
 }
