@@ -4,6 +4,7 @@
 #' @param group a vector giving the groups for the corresponding elements of \code{x}. Ignored if \code{x} is a list.
 #' @param perm use permutations to calculate the p-value
 #' @param perm.n number of permutations used for p-value calculation
+#' @param seed integer to set the random seed (see also \code{\link{set.seed}}); default is NULL (no set seed)
 #' @return modified Kruskal Wallis test statistic and p-value
 #' @export
 #' @import stats utils graphics methods
@@ -23,7 +24,7 @@
 #' \dontrun{zikw(x, group, perm = TRUE)}
 #' @references Wanjie Wang, Eric Z. Chen and Hongzhe Li (2021). Rank-based tests for compositional distributions with a clump of zeros. Submitted.
 
-zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
+zikw <- function(x, group, perm = FALSE, perm.n = 10000, seed = NULL) {
 
   ## check if x is a list
   if (class(x) == "numeric" || class(x) == "data.frame") {
@@ -35,12 +36,13 @@ zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
   
   ## calculate the pvalue
   if (perm) {
+    if (!is.null(seed)) set.seed(seed)
     permu.w <- rep(0, perm.n)
     perm.group <- rep(c(seq_len(x)), sapply(x, length))
     xvec <- unlist(x)
+    
     ## need to permute a list
     for (i in seq_len(perm.n)) {
-      set.seed(i)
       xvec.perm <- sample(xvec, length(xvec))
       x.list.perm <- vect2list(xvec.perm, group)
       permu.w[i] <- calculate_zikw_statistic(x.list.perm)
@@ -81,7 +83,7 @@ calculate_zikw_statistic <- function(x) {
   Ntrun <- round(pmax * N)
   
   ## truncate zeros in each group
-  Xtrun.vec <- numeric(0)
+  Xtrun.vec <- 0L
   for (i in seq_len(K)) {
     data <- x[[i]]
     Xtrun.vec <-
