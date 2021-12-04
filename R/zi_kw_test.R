@@ -24,88 +24,10 @@
 #' @references Wanjie Wang, Eric Z. Chen and Hongzhe Li (2021). Rank-based tests for compositional distributions with a clump of zeros. Submitted.
 
 zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
-  ## transform x into a list
-  vect2list = function(x,group){
-    s <- unique(group)
-    x.list <- list()
-    for (i in s) {
-      x.list[[i]] <- x[group == i]
-    }
-    return(x.list)
-  }
+
   ## check if x is a list
   if (class(x) == "numeric" || class(x) == "data.frame") {
     x <- vect2list(x,group)
-  }
-  
-  ## this function takes a list as the input
-  calculate_zikw_statistic = function(x){
-    ## number of groups
-    K <- length(x)
-    ## total observations in each group
-    N <- rep(0, K)
-    ## number of non-zero observations in each group
-    n <- rep(0, K)
-    xvec <- numeric(0)
-    ## count total and non-zero observations in each group
-    for (i in 1:K) {
-      N[i] <- length(x[[i]])
-      n[i] <- sum(x[[i]] != 0)
-      xvec <- c(xvec, x[[i]])
-    }
-    ## non-zero proportion
-    prop <- n / N
-    pmax <- max(prop)
-    ## keep only round(pmax * N) observations in each group
-    Ntrun <- round(pmax * N)
-    ## truncate zeros in each group
-    Xtrun.vec <- numeric(0)
-    for (i in 1:K) {
-      data <- x[[i]]
-      Xtrun.vec <-
-        c(Xtrun.vec, data[data != 0], rep(0, Ntrun[i] - n[i]))
-    }
-    rankdata <- sum(Ntrun) + 1 - rank(Xtrun.vec)
-    r <- sum(rankdata[1:Ntrun[i]])
-    
-    for (i in 2:K) {
-      r <- c(r, sum(rankdata[1:Ntrun[i] + sum(Ntrun[1:(i - 1)])]))
-    }
-    s <- r - Ntrun * (sum(Ntrun) + 1) / 2
-    u <- numeric(0)
-    
-    for (i in 1:(K - 1))
-      u <- c(u, N[i + 1] * sum(s[1:i]) - sum(N[1:i]) * s[i + 1])
-    u <- u / sum(N) ^ 2
-    thetam <- mean(prop)
-    simun <- matrix(0, nrow = 5000, ncol = K)
-    simup <- simun
-    for (ss in 1:K) {
-      simun[,ss] <- rbinom(5000, N[ss], thetam)
-      simup[,ss] <- simun[,ss] / N[ss]
-    }
-    simupmax <- apply(simup, 1, max)
-    varsimu <- numeric(K - 1)
-    
-    varsimu[1] <-
-      N[2] ^ 2 * mean(simupmax ^ 2 * (simup[,1] - simup[,2]) ^ 2) * N[1] ^ 2
-    varu2 <- N[2] * N[1] * (N[1] + N[2])
-    
-    for (ss in 2:(K - 1)) {
-      varsimu[ss] <-
-        N[ss + 1] ^ 2 * mean(simupmax ^ 2 * (apply(simun[,1:ss], 1, sum) - simup[,ss +
-                                                                                   1] * sum(N[1:ss])) ^ 2)
-      varu2 <-
-        c(varu2, N[ss + 1] * sum(N[1:ss]) * sum(N[1:(ss + 1)]))
-    }
-    varsimu <- varsimu / (sum(N)) ^ 2 / 4
-    
-    varu2 <-
-      varu2 * thetam ^ 2 * (thetam + 1 / sum(N)) / 12 / (sum(N)) ^ 2
-    varu <- varsimu + varu2
-    ## modified Kruskal Wallis test statistic
-    w <- sum(u ^ 2 / varu)
-    return(w)
   }
   
   ## calclulate the zikw statistic
@@ -132,4 +54,82 @@ zikw <- function(x, group, perm = FALSE, perm.n = 10000) {
   }
   
   return(list(p.value = pw, statistics = w))
+}
+
+calculate_zikw_statistic = function(x){
+  ## number of groups
+  K <- length(x)
+  ## total observations in each group
+  N <- rep(0, K)
+  ## number of non-zero observations in each group
+  n <- rep(0, K)
+  xvec <- numeric(0)
+  ## count total and non-zero observations in each group
+  for (i in 1:K) {
+    N[i] <- length(x[[i]])
+    n[i] <- sum(x[[i]] != 0)
+    xvec <- c(xvec, x[[i]])
+  }
+  ## non-zero proportion
+  prop <- n / N
+  pmax <- max(prop)
+  ## keep only round(pmax * N) observations in each group
+  Ntrun <- round(pmax * N)
+  ## truncate zeros in each group
+  Xtrun.vec <- numeric(0)
+  for (i in 1:K) {
+    data <- x[[i]]
+    Xtrun.vec <-
+      c(Xtrun.vec, data[data != 0], rep(0, Ntrun[i] - n[i]))
+  }
+  rankdata <- sum(Ntrun) + 1 - rank(Xtrun.vec)
+  r <- sum(rankdata[1:Ntrun[i]])
+  
+  for (i in 2:K) {
+    r <- c(r, sum(rankdata[1:Ntrun[i] + sum(Ntrun[1:(i - 1)])]))
+  }
+  s <- r - Ntrun * (sum(Ntrun) + 1) / 2
+  u <- numeric(0)
+  
+  for (i in 1:(K - 1))
+    u <- c(u, N[i + 1] * sum(s[1:i]) - sum(N[1:i]) * s[i + 1])
+  u <- u / sum(N) ^ 2
+  thetam <- mean(prop)
+  simun <- matrix(0, nrow = 5000, ncol = K)
+  simup <- simun
+  for (ss in 1:K) {
+    simun[,ss] <- rbinom(5000, N[ss], thetam)
+    simup[,ss] <- simun[,ss] / N[ss]
+  }
+  simupmax <- apply(simup, 1, max)
+  varsimu <- numeric(K - 1)
+  
+  varsimu[1] <-
+    N[2] ^ 2 * mean(simupmax ^ 2 * (simup[,1] - simup[,2]) ^ 2) * N[1] ^ 2
+  varu2 <- N[2] * N[1] * (N[1] + N[2])
+  
+  for (ss in 2:(K - 1)) {
+    varsimu[ss] <-
+      N[ss + 1] ^ 2 * mean(simupmax ^ 2 * (apply(simun[,1:ss], 1, sum) - simup[,ss +
+                                                                                 1] * sum(N[1:ss])) ^ 2)
+    varu2 <-
+      c(varu2, N[ss + 1] * sum(N[1:ss]) * sum(N[1:(ss + 1)]))
+  }
+  varsimu <- varsimu / (sum(N)) ^ 2 / 4
+  
+  varu2 <-
+    varu2 * thetam ^ 2 * (thetam + 1 / sum(N)) / 12 / (sum(N)) ^ 2
+  varu <- varsimu + varu2
+  ## modified Kruskal Wallis test statistic
+  w <- sum(u ^ 2 / varu)
+  return(w)
+}
+
+vect2list = function(x,group){
+  s <- unique(group)
+  x.list <- list()
+  for (i in s) {
+    x.list[[i]] <- x[group == i]
+  }
+  return(x.list)
 }
