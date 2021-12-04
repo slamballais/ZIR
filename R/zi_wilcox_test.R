@@ -35,7 +35,7 @@ ziw <- function(x, y, perm = FALSE, perm.n = 10000, seed = NULL) {
     }
     p <- sum(abs(w) < abs(permu.w)) / perm.n
   } else {
-    p <- 2 * (1 - pnorm(abs(w)))
+    p <- 2 * min(pnorm(w), pnorm(w, lower.tail = FALSE))
   }
   
   return(list(p.value = p, statistics = w))
@@ -79,3 +79,4 @@ calculate_ziw_statistic <- function(x, y) {
   w <- s / sqrt(vars)
   return(w)
 }
+
