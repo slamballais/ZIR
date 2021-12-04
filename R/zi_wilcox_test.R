@@ -2,9 +2,10 @@
 #'
 #' @param x a vector of data for one group
 #' @param y a vector of data for another group
-#' @param perm use permutation to calculate the pvalue
-#' @param perm.n number of permutations used for pvalue calculation
-#' @return modified wilcoxon rank sum statistic and pvalue
+#' @param perm logical indicating use of permutation to calculate the p-value
+#' @param perm.n number (integer) of permutations used for p-value calculation
+#' @param seed integer to set the random seed (see also \code{\link{set.seed}}); default is NULL (no set seed)
+#' @return modified wilcoxon rank sum statistic and p-value
 #' @export
 #' @import stats utils graphics methods
 #' @examples
@@ -13,9 +14,9 @@
 #' ziw(x, y, perm = FALSE)
 #' ## use permutations to calculate the pvalue
 #' ziw(x, y, perm = TRUE)
-#' @references Wanjie Wang, Eric Z. Chen and Hongzhe Li (2015). Rank-based tests for compositional distributions with a clump of zeros. Submitted.
+#' @references Wanjie Wang, Eric Z. Chen and Hongzhe Li (2021). Rank-based tests for compositional distributions with a clump of zeros. Submitted.
 
-ziw <- function(x, y, perm = FALSE, perm.n = 10000) {
+ziw <- function(x, y, perm = FALSE, perm.n = 10000, seed = NULL) {
   
   ## calclulate the ziw statistic
   w <- calculate_ziw_statistic(x,y)
