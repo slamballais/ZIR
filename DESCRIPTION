@@ -17,6 +17,7 @@ Description: When the underlying distribution of data is unknown,usually we use
   (Zero-Inflated Rank Test), which has more power than the traditional rank 
   based test when the data contain many zeroes, and have similar power as the 
   traditional rank based test when the data don't have too many zeros.
+License: MIT + file LICENSE
 Imports:
     graphics,
     methods,
@@ -26,6 +27,5 @@ Suggests:
     testthat,
     roxygen2,
     knitr
-License: GPL-2
 LazyData: true
 RoxygenNote: 7.1.1
